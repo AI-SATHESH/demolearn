@@ -1,4 +1,4 @@
-name: Simple Echo
+name: Deploy to AWS Server
 
 on:
   push:
@@ -6,9 +6,30 @@ on:
       - main
 
 jobs:
-  echo:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Echo message
-      run: echo "Push event happened on the main branch!"
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install SSH Client
+      run: sudo apt-get install -y openssh-client
+
+    - name: Add SSH Key
+      uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy index.html to the server
+      run: |
+        scp -o StrictHostKeyChecking=no index.html ubuntu@13.200.235.118:/var/www/html/
+
+    - name: Ensure Apache is installed and running
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@13.200.235.118 << EOF
+          sudo apt-get update
+          sudo apt-get install -y apache2
+          sudo systemctl enable apache2
+          sudo systemctl start apache2
+        EOF
