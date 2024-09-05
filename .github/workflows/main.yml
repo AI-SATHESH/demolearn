@@ -1,0 +1,14 @@
+name: Simple Echo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  echo:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Echo message
+      run: echo "Push event happened on the main branch!"
