@@ -29,7 +29,7 @@ jobs:
     # Step 4: Copy files to the destination server using scp
     - name: Deploy files to destination server
       run: |
-        scp -r ./ ubuntu@3.108.59.223:/home/ubuntu/learningdosc/task-1
+        scp -r ./task-1/ ubuntu@3.108.59.223:/home/ubuntu/learningdosc/task-1
 
     # Step 5: (Optional) Restart the application on the destination server
     - name: Restart FastAPI service
