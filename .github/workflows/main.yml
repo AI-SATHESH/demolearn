@@ -39,4 +39,4 @@ jobs:
     # Step 6: (Optional) Restart the application on the destination server
     - name: Restart FastAPI service
       run: |
-        ssh ubuntu@43.205.140.189 'cd /home/ubuntu/learningdosc/task-1/task-1 && docker-compose down && docker-compose up -d'
+        ssh ubuntu@43.205.140.189 'cd /home/ubuntu/learningdosc/task-1/task-1 && sudo docker-compose down && docker-compose up -d'
