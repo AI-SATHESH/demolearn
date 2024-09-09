@@ -24,19 +24,19 @@ jobs:
     - name: Add remote server to known_hosts
       run: |
         mkdir -p ~/.ssh
-        ssh-keyscan -H 43.205.140.189 >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ secrets.REMOTE_SERVER_IP }} >> ~/.ssh/known_hosts
 
     # Step 4: Ensure the destination directory exists on the remote server
     - name: Create destination directory
       run: |
-        ssh ubuntu@43.205.140.189 'mkdir -p /home/ubuntu/learningdosc/task-1'
+        ssh ubuntu@${{ secrets.REMOTE_SERVER_IP }} 'mkdir -p /home/ubuntu/learningdosc/task-1'
 
     # Step 5: Copy files to the destination server using scp
     - name: Deploy files to destination server
       run: |
-        scp -r ./task-1/ ubuntu@43.205.140.189:/home/ubuntu/learningdosc/task-1
+        scp -r ./task-1/ ubuntu@${{ secrets.REMOTE_SERVER_IP }}:/home/ubuntu/learningdosc/task-1
 
     # Step 6: (Optional) Restart the application on the destination server
     - name: Restart FastAPI service
       run: |
-        ssh ubuntu@43.205.140.189 'cd /home/ubuntu/learningdosc/task-1/task-1 && sudo docker-compose down && docker-compose up -d'
+        ssh ubuntu@${{ secrets.REMOTE_SERVER_IP }} 'cd /home/ubuntu/learningdosc/task-1/task-1 && sudo docker-compose down && docker-compose up -d'
