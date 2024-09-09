@@ -20,12 +20,18 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Use the secret stored in GitHub
 
-    # Step 3: Copy files to the destination server using scp
+    # Step 3: Add the remote server to known_hosts
+    - name: Add remote server to known_hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H 3.108.59.223 >> ~/.ssh/known_hosts
+
+    # Step 4: Copy files to the destination server using scp
     - name: Deploy files to destination server
       run: |
         scp -r ./ ubuntu@3.108.59.223:/home/ubuntu/learningdosc/task-1
 
-    # Step 4: (Optional) Restart the application on the destination server
+    # Step 5: (Optional) Restart the application on the destination server
     - name: Restart FastAPI service
       run: |
-        ssh ubuntu@ 3.108.59.223 'cd /home/ubuntu/learningdosc/task-1 && docker-compose down && docker-compose up -d'
+        ssh ubuntu@3.108.59.223 'cd /home/ubuntu/learningdosc/task-1 && docker-compose down && docker-compose up -d'
