@@ -23,9 +23,9 @@ jobs:
     # Step 3: Copy files to the destination server using scp
     - name: Deploy files to destination server
       run: |
-        scp -r ./ ubuntu@172.31.5.87:/home/ubuntu/learningdosc/task-1
+        scp -r ./ ubuntu@3.108.59.223:/home/ubuntu/learningdosc/task-1
 
     # Step 4: (Optional) Restart the application on the destination server
     - name: Restart FastAPI service
       run: |
-        ssh ubuntu@172.31.5.87 'cd /home/ubuntu/learningdosc/task-1 && docker-compose down && docker-compose up -d'
+        ssh ubuntu@ 3.108.59.223 'cd /home/ubuntu/learningdosc/task-1 && docker-compose down && docker-compose up -d'
