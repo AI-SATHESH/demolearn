@@ -1,36 +1,31 @@
-name: Deploy to AWS Server
+name: Deploy to Destination Server
 
 on:
   push:
     branches:
-      - main
+      - main  # Trigger this action on pushes to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+    # Step 1: Checkout the latest code from the repository
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install SSH Client
-      run: sudo apt-get install -y openssh-client
-
-    - name: Add SSH Key
-      uses: webfactory/ssh-agent@v0.5.4
+    # Step 2: Set up SSH to connect to the destination server
+    - name: Set up SSH agent
+      uses: webfactory/ssh-agent@v0.7.0
       with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Use the secret stored in GitHub
 
-    - name: Deploy index.html to the server
+    # Step 3: Copy files to the destination server using scp
+    - name: Deploy files to destination server
       run: |
-        scp -o StrictHostKeyChecking=no index.html ubuntu@13.200.235.118:/var/www/html/
+        scp -r ./ ubuntu@172.31.5.87:/home/ubuntu/learningdosc/task-1
 
-    - name: Ensure Apache is installed and running
+    # Step 4: (Optional) Restart the application on the destination server
+    - name: Restart FastAPI service
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@13.200.235.118 << EOF
-          sudo apt-get update
-          sudo apt-get install -y apache2
-          sudo systemctl enable apache2
-          sudo systemctl start apache2
-        EOF
+        ssh ubuntu@172.31.5.87 'cd /home/ubuntu/learningdosc/task-1 && docker-compose down && docker-compose up -d'
