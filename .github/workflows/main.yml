@@ -14,11 +14,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set up SSH to connect to the destination server
-    - name: Set up SSH agent
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Use the secret stored in GitHub
+    # Step 2: Install sshpass
+    - name: Install sshpass
+      run: sudo apt-get install -y sshpass
 
     # Step 3: Add the remote server to known_hosts
     - name: Add remote server to known_hosts
@@ -29,14 +27,14 @@ jobs:
     # Step 4: Ensure the destination directory exists on the remote server
     - name: Create destination directory
       run: |
-        ssh ubuntu@${{ secrets.REMOTE_SERVER_IP }} 'mkdir -p /home/ubuntu/learningdosc/task-1'
+        sshpass -p ${{ secrets.REMOTE_SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP }} 'mkdir -p /home/ubuntu/learningdosc/task-1'
 
     # Step 5: Copy files to the destination server using scp
     - name: Deploy files to destination server
       run: |
-        scp -r ./task-1/ ubuntu@${{ secrets.REMOTE_SERVER_IP }}:/home/ubuntu/learningdosc/task-1
+        sshpass -p ${{ secrets.REMOTE_SERVER_PASSWORD }} scp -r -o StrictHostKeyChecking=no ./task-1/ ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP }}:/home/ubuntu/learningdosc/task-1
 
     # Step 6: (Optional) Restart the application on the destination server
     - name: Restart FastAPI service
       run: |
-        ssh ubuntu@${{ secrets.REMOTE_SERVER_IP }} 'cd /home/ubuntu/learningdosc/task-1/task-1 && sudo docker-compose down && docker-compose up -d'
+        sshpass -p ${{ secrets.REMOTE_SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP }} 'cd /home/ubuntu/learningdosc/task-1/task-1 && sudo docker-compose down && docker-compose up -d'
