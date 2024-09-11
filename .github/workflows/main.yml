@@ -14,51 +14,56 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Install sshpass and AWS CLI
-    - name: Install sshpass and AWS CLI
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y sshpass
-        sudo apt-get install -y awscli
+    # Step 2: Set up AWS credentials (no need to install AWS CLI manually)
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: 'us-east-1'
 
-    # Step 3: Fetch GitHub IP ranges
-    - name: Fetch GitHub IP ranges
-      id: fetch_ips
-      run: |
-        curl -s https://api.github.com/meta | jq -r '.actions[]' > ip_ranges.txt
+    # Step 3: Add public IP to AWS Security Group using a pre-built action
+    - name: Add public IP to AWS security group
+      uses: sohelamin/aws-security-group-add-ip-action@master
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: 'us-east-1'
+        aws-security-group-id: ${{ secrets.AWS_SECURITY_GROUP_ID }}
+        port: '22'
+        to-port: '22'
+        protocol: 'tcp'
+        description: 'GitHub Action Runner IP'
 
-    # Step 4: Update AWS Security Group with GitHub IP ranges
-    - name: Update AWS Security Group
-      run: |
-        for ip_range in $(cat ip_ranges.txt); do
-          aws ec2 authorize-security-group-ingress \
-            --group-id ${{ secrets.AWS_SECURITY_GROUP_ID }} \
-            --protocol tcp \
-            --port 22 \
-            --cidr $ip_range
-        done
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: 'us-east-1'
-
-    # Step 5: Add the remote server to known_hosts
+    # Step 4: Add remote server to known_hosts using a pre-built SSH action
     - name: Add remote server to known_hosts
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.REMOTE_SERVER_IP }} >> ~/.ssh/known_hosts
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.REMOTE_SERVER_IP }}
+        username: ${{ secrets.REMOTE_SERVER_USERNAME }}
+        password: ${{ secrets.REMOTE_SERVER_PASSWORD }}
+        script: |
+          ssh-keyscan -H ${{ secrets.REMOTE_SERVER_IP }} >> ~/.ssh/known_hosts
 
-    # Step 6: Ensure the destination directory exists on the remote server
-    - name: Create destination directory
-      run: |
-        sshpass -p ${{ secrets.REMOTE_SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP }} 'mkdir -p /home/ubuntu/learningdosc/task-1'
+    # Step 5: Copy files to the remote server using SCP action
+    - name: Copy files to destination server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.REMOTE_SERVER_IP }}
+        username: ${{ secrets.REMOTE_SERVER_USERNAME }}
+        password: ${{ secrets.REMOTE_SERVER_PASSWORD }}
+        source: "./task-1/"
+        target: "/home/ubuntu/learningdosc/task-1"
+        port: 22
 
-    # Step 7: Copy files to the destination server using scp
-    - name: Deploy files to destination server
-      run: |
-        sshpass -p ${{ secrets.REMOTE_SERVER_PASSWORD }} scp -r -o StrictHostKeyChecking=no ./task-1/ ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP }}:/home/ubuntu/learningdosc/task-1
-
-    # Step 8: (Optional) Restart the application on the destination server
-    - name: Restart FastAPI service
-      run: |
-        sshpass -p ${{ secrets.REMOTE_SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_SERVER_USERNAME }}@${{ secrets.REMOTE_SERVER_IP }} 'cd /home/ubuntu/learningdosc/task-1/task-1 && sudo docker-compose down && docker-compose up -d'
+    # Step 6: Restart the FastAPI application on the destination server
+    - name: Restart FastAPI service on the remote server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.REMOTE_SERVER_IP }}
+        username: ${{ secrets.REMOTE_SERVER_USERNAME }}
+        password: ${{ secrets.REMOTE_SERVER_PASSWORD }}
+        script: |
+          cd /home/ubuntu/learningdosc/task-1/task-1
+          sudo docker-compose down
+          sudo docker-compose up -d
